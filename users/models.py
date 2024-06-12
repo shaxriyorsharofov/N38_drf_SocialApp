@@ -93,7 +93,7 @@ class User(AbstractUser, BaseModel):
 
 
 PHONE_EXPIRE = 2
-EMAIL_EXPIRE = 5
+EMAIL_EXPIRE = 2
 
 
 class UserConfirmation(BaseModel):

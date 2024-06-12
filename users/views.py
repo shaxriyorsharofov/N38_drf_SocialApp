@@ -19,8 +19,8 @@ class VerifyAPIView(APIView):
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
-        user = self.request.user             # user ->
-        code = self.request.data.get('code') # 4083
+        user = self.request.user
+        code = self.request.data.get('code')
 
         self.check_verify(user, code)
         return Response(
@@ -33,7 +33,7 @@ class VerifyAPIView(APIView):
         )
 
     @staticmethod
-    def check_verify(user, code):       # 12:03 -> 12:05 => expiration_time=12:05   12:04
+    def check_verify(user, code):
         verifies = user.verify_codes.filter(expiration_time__gte=datetime.now(), code=code, is_confirmed=False)
         print(verifies)
         if not verifies.exists():
@@ -82,3 +82,53 @@ class GetNewVerification(APIView):
                 "message": "Kodingiz hali ishlatish uchun yaroqli. Biroz kutib turing"
             }
             raise ValidationError(data)
+        # if user.auth_status == CODE_VERIFIED:
+        #     data = {
+        #         "message": "Siz allaqachon tastiqlash kodini kiritgansiz.",
+        #
+        #     }
+        #     raise ValidationError(data)
+
+
+class ChangeUserInformationView(UpdateAPIView):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = ChangeUserInformation
+    http_method_names = ['patch', 'put']
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        super(ChangeUserInformationView, self).update(request, *args, **kwargs)
+        data = {
+            'success': True,
+            "message": "User updated successfully",
+            'auth_status': self.request.user.auth_status,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+    def partial_update(self, request, *args, **kwargs):
+        super(ChangeUserInformationView, self).partial_update(request, *args, **kwargs)
+        data = {
+            'success': True,
+            "message": "User updated successfully",
+            'auth_status': self.request.user.auth_status,
+        }
+        return Response(data, status=200)
+
+
+class ChangeUserPhotoView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def put(self, request, *args, **kwargs):
+        serializer = ChangeUserPhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            serializer.update(user, serializer.validated_data)
+            return Response({
+                'message': "Rasm muvaffaqiyatli o'zgartirildi"
+            }, status=200)
+        return Response(
+            serializer.errors, status=400
+        )
